@@ -1,20 +1,26 @@
 @echo off
 setlocal
-title Khmer Amount Converter - 1. Create Android APK
+title Khmer Amount Converter - Download Latest Android APK
 cd /d "%~dp0"
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\build-and-download-apk.ps1" %*
+echo ======================================================================
+echo   FETCHING / DOWNLOADING LATEST KHMER AMOUNT CONVERTER APK
+echo ======================================================================
+echo.
+
+node scripts/download-apk.js
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.
 if not "%EXIT_CODE%"=="0" (
     echo ======================================================================
-    echo   APK BUILD STOPPED WITH ERROR [Code: %EXIT_CODE%]
+    echo   DOWNLOAD STOPPED WITH ERROR [Code: %EXIT_CODE%]
     echo ======================================================================
 ) else (
     echo ======================================================================
-    echo   APK READY TO INSTALL ON ANDROID!
+    echo   APK READY! OPENING FOLDER...
     echo ======================================================================
+    explorer.exe /select,"%~dp0KhmerAmountConverter.apk"
 )
 
 pause
