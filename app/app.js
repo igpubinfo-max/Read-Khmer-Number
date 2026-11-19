@@ -701,13 +701,13 @@ function setupEventListeners() {
   // Cheque & Print/JPG Actions
   if (elements.printChequeBtn) {
     elements.printChequeBtn.addEventListener('click', () => {
-      window.print();
+      triggerPrintReceipt();
     });
   }
 
   if (elements.quickPrintBtn) {
     elements.quickPrintBtn.addEventListener('click', () => {
-      window.print();
+      triggerPrintReceipt();
     });
   }
 
@@ -1037,6 +1037,30 @@ function generateReceiptCanvas() {
   return canvas;
 }
 
+function triggerPrintReceipt() {
+  const words = elements.khmerWords.textContent;
+  if (!words || words.includes('សូមបញ្ចូល')) {
+    showToast('សូមបញ្ចូលចំនួនទឹកប្រាក់ជាមុនសិន!');
+    return;
+  }
+
+  const canvas = generateReceiptCanvas();
+  const dateStr = elements.chequeDate ? elements.chequeDate.value.replace(/-/g, '') : 'date';
+  const cleanAmt = state.amount ? state.amount.replace(/[^0-9.]/g, '') : 'amount';
+  const jobName = `Receipt_${cleanAmt}_${state.currency}_${dateStr}`;
+
+  // Method A: Native Android Print Bridge (calls PrintHelper / PrintManager)
+  if (window.AndroidBridge && typeof window.AndroidBridge.printReceipt === 'function') {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    showToast('កំពុងបើកផ្ទាំងបោះពុម្ព... 🖨️');
+    window.AndroidBridge.printReceipt(dataUrl, jobName);
+    return;
+  }
+
+  // Method B: Standard Browser Print fallback
+  window.print();
+}
+
 function downloadReceiptJPG() {
   const words = elements.khmerWords.textContent;
   if (!words || words.includes('សូមបញ្ចូល')) {
@@ -1049,6 +1073,15 @@ function downloadReceiptJPG() {
   const cleanAmt = state.amount ? state.amount.replace(/[^0-9.]/g, '') : 'amount';
   const filename = `Receipt_${cleanAmt}_${state.currency}_${dateStr}.jpg`;
 
+  // Method A: Native Android APK Bridge (saves directly into Phone Gallery / Pictures)
+  if (window.AndroidBridge && typeof window.AndroidBridge.saveImageToGallery === 'function') {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    showToast('កំពុងរក្សាទុកក្នុង Gallery... 🖼️');
+    window.AndroidBridge.saveImageToGallery(dataUrl, filename);
+    return;
+  }
+
+  // Method B: Standard Browser download fallback
   canvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
@@ -1077,6 +1110,14 @@ async function shareReceiptJPG() {
   const cleanAmt = state.amount ? state.amount.replace(/[^0-9.]/g, '') : 'amount';
   const filename = `Receipt_${cleanAmt}_${state.currency}_${dateStr}.jpg`;
 
+  // Method A: Native Android Share Bridge (shares real file to Telegram, Messenger, etc.)
+  if (window.AndroidBridge && typeof window.AndroidBridge.shareImage === 'function') {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    window.AndroidBridge.shareImage(dataUrl, filename);
+    return;
+  }
+
+  // Method B: Web Share API fallback
   canvas.toBlob(async (blob) => {
     if (!blob) return;
     const file = new File([blob], filename, { type: 'image/jpeg' });
