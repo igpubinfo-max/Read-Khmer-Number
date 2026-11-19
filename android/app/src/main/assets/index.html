@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="km" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="អក្សរខ្មែរ">
+  <meta name="description" content="កម្មវិធីបម្លែងចំនួនទឹកប្រាក់ និងតួលេខជាអក្សរខ្មែរ សម្រាប់វិក្កយបត្រ មូលប្បទានប័ត្រ និងធនាគារ">
+  
+  <title>អានចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ - Khmer Amount to Words</title>
+  
+  <!-- Manifest for Android PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+
+  <!-- Google Khmer Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700;800&family=Battambang:wght@400;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="mobile-wrapper">
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand">
+        <img src="icons/icon.svg" alt="App Icon" class="brand-icon">
+        <div class="brand-text">
+          <h1>អានចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ</h1>
+          <span>Khmer Amount to Words</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="installBtn" class="install-btn" style="display: none;" title="ដំឡើងលើទូរស័ព្ទ Android">
+          📲 ដំឡើង App
+        </button>
+        <button id="themeToggleBtn" class="icon-btn" title="ប្ដូរពន្លឺ / ងងឹត">
+          <span id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Input Card -->
+      <section class="card input-section">
+        <!-- Scale Mode Switcher -->
+        <div class="mode-switcher">
+          <button type="button" class="mode-tab active" data-mode="banking">
+            🏦 ស្តង់ដារធនាគារ (ពាន់, លាន)
+          </button>
+          <button type="button" class="mode-tab" data-mode="traditional">
+            📜 រាប់បែបខ្មែរ (ម៉ឺន, សែន, លាន)
+          </button>
+        </div>
+
+        <!-- Currency Selector -->
+        <div class="currency-tabs">
+          <button type="button" class="currency-tab active" data-currency="USD">
+            <span class="cur-sym">$</span>
+            <span>ដុល្លារ (USD)</span>
+          </button>
+          <button type="button" class="currency-tab" data-currency="KHR">
+            <span class="cur-sym">៛</span>
+            <span>រៀល (KHR)</span>
+          </button>
+          <button type="button" class="currency-tab" data-currency="THB">
+            <span class="cur-sym">฿</span>
+            <span>បាត (THB)</span>
+          </button>
+          <button type="button" class="currency-tab" data-currency="NONE">
+            <span class="cur-sym">123</span>
+            <span>លេខសុទ្ធ</span>
+          </button>
+        </div>
+
+        <!-- Numeric Input Field -->
+        <div class="input-group">
+          <input 
+            type="text" 
+            id="amountInput" 
+            class="amount-input" 
+            placeholder="0.00" 
+            inputmode="decimal" 
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button id="clearBtn" class="clear-btn" title="សម្អាត">✕</button>
+        </div>
+
+        <!-- Quick Increments Chips -->
+        <div id="quickChipsContainer" class="quick-chips-scroll"></div>
+      </section>
+
+      <!-- Result Card (Highlight) -->
+      <section class="card result-card">
+        <div class="result-header">
+          <div class="result-title">
+            <span>✨</span>
+            <span>ចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ</span>
+          </div>
+          <div class="result-controls">
+            <button id="fontMinusBtn" class="btn-small" title="បង្រួមអក្សរ">A-</button>
+            <button id="fontPlusBtn" class="btn-small" title="ពង្រីកអក្សរ">A+</button>
+          </div>
+        </div>
+
+        <!-- Spelled-out Words Area -->
+        <div id="khmerWords" class="words-display">
+          សូមបញ្ចូលចំនួនទឹកប្រាក់...
+        </div>
+
+        <!-- Options Checkboxes -->
+        <div class="options-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="exactKotCheck" checked>
+            <span>បញ្ចប់ដោយពាក្យ <strong>"គត់"</strong></span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="spacingCheck">
+            <span>ដកឃ្លាចន្លោះពាក្យ (ងាយអាន)</span>
+          </label>
+        </div>
+
+        <!-- Primary Action Buttons -->
+        <div class="action-buttons">
+          <button id="copyWordsBtn" class="btn-action btn-primary">
+            <span>📋</span>
+            <span>ចម្លងអក្សរខ្មែរ</span>
+          </button>
+          <button id="speakBtn" class="btn-action btn-secondary" title="ស្តាប់ការបញ្ចេញសំឡេង">
+            <span>🔊</span>
+            <span>ស្តាប់</span>
+          </button>
+          <button id="shareBtn" class="btn-action btn-secondary" title="ចែករំលែកទៅ Telegram / SMS">
+            <span>📤</span>
+            <span>ផ្ញើ</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Figures & Khmer Numerals Card -->
+      <section class="summary-grid">
+        <div class="summary-box">
+          <span class="summary-label">ចំនួនជាលេខអារ៉ាប់</span>
+          <div class="summary-val">
+            <span id="formattedAmount">---</span>
+            <button id="copyAllBtn" class="mini-copy-btn" title="ចម្លងទាំងអស់">📋</button>
+          </div>
+        </div>
+        <div class="summary-box">
+          <span class="summary-label">ចំនួនជាលេខខ្មែរ</span>
+          <div class="summary-val">
+            <span id="khmerDigits">---</span>
+            <button id="copyDigitsBtn" class="mini-copy-btn" title="ចម្លងលេខខ្មែរ">📋</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Toggle Keypad Button Row -->
+      <div class="toggle-keypad-row" style="display: flex; justify-content: flex-end;">
+        <button id="toggleKeypadBtn" class="btn-small" style="font-family: var(--font-khmer); font-size: 12px; padding: 6px 12px;">
+          ⌨️ បិទក្តារចុចលើអេក្រង់
+        </button>
+      </div>
+
+      <!-- On-Screen Touch Keypad -->
+      <div id="onScreenKeypad" class="keypad-container">
+        <div class="keypad-grid">
+          <button type="button" class="key-btn" data-key="1">1</button>
+          <button type="button" class="key-btn" data-key="2">2</button>
+          <button type="button" class="key-btn" data-key="3">3</button>
+
+          <button type="button" class="key-btn" data-key="4">4</button>
+          <button type="button" class="key-btn" data-key="5">5</button>
+          <button type="button" class="key-btn" data-key="6">6</button>
+
+          <button type="button" class="key-btn" data-key="7">7</button>
+          <button type="button" class="key-btn" data-key="8">8</button>
+          <button type="button" class="key-btn" data-key="9">9</button>
+
+          <button type="button" class="key-btn action-key" data-key=".">.</button>
+          <button type="button" class="key-btn" data-key="0">0</button>
+          <button type="button" class="key-btn action-key" data-key="BACK">⌫</button>
+
+          <button type="button" class="key-btn action-key" data-key="00">00</button>
+          <button type="button" class="key-btn action-key" data-key="000">000</button>
+          <button type="button" class="key-btn action-key" data-key="C">C</button>
+        </div>
+      </div>
+
+      <!-- Cheque / Payment Voucher Template Card -->
+      <section class="cheque-card">
+        <div class="cheque-header">
+          <div class="cheque-title">🧾 បង្កាន់ដៃទូទាត់ / PAYMENT VOUCHER</div>
+          <div>
+            <input type="date" id="chequeDate" class="cheque-input" style="width: 125px; font-weight: 600;">
+          </div>
+        </div>
+
+        <div class="cheque-field-row">
+          <span class="cheque-field-label">បង់ជូនឈ្មោះ (Pay to):</span>
+          <input type="text" id="chequePayee" class="cheque-input" placeholder="ឈ្មោះអ្នកទទួលប្រាក់...">
+        </div>
+
+        <div class="cheque-field-row">
+          <span class="cheque-field-label">ចំនួនជាលេខ (Amount):</span>
+          <div id="chequeFigures" class="cheque-box-amount">---</div>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <span class="cheque-field-label">ចំនួនទឹកប្រាក់ជាអក្សរ (In Words):</span>
+          <div id="chequeWords" class="cheque-words-display">---</div>
+        </div>
+
+        <div class="cheque-field-row">
+          <span class="cheque-field-label">សម្រាប់ (For / Memo):</span>
+          <input type="text" id="chequeMemo" class="cheque-input" placeholder="ថ្លៃទំនិញ / សេវាកម្ម / វិក្កយបត្រ...">
+        </div>
+
+        <div class="cheque-footer">
+          <div style="font-size: 11px; opacity: 0.7;">* បង្កាន់ដៃត្រឹមត្រូវតាមច្បាប់</div>
+          <div class="cheque-sig-line">ហត្ថលេខាអ្នកអនុញ្ញាត</div>
+        </div>
+
+        <div class="cheque-btns">
+          <button id="copyChequeBtn" class="btn-small" style="font-family: var(--font-khmer); font-size: 12px; flex: 1; padding: 8px;">
+            📋 ចម្លងព័ត៌មានបង្កាន់ដៃ
+          </button>
+          <button id="printChequeBtn" class="btn-small" style="font-family: var(--font-khmer); font-size: 12px; flex: 1; padding: 8px;">
+            🖨️ បោះពុម្ព (Print)
+          </button>
+        </div>
+      </section>
+
+      <!-- History Section -->
+      <section class="card history-section">
+        <div class="section-header">
+          <span class="section-title">🕒 ប្រវត្តិការបម្លែងថ្មីៗ (History)</span>
+          <button id="clearHistoryBtn" class="text-btn">លុបប្រវត្តិ</button>
+        </div>
+        <ul id="historyList" class="history-list">
+          <!-- Dynamically populated -->
+        </ul>
+      </section>
+    </main>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast">បានចម្លង!</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

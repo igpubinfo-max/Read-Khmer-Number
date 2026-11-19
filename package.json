@@ -1,0 +1,19 @@
+{
+  "name": "khmer-amount-converter",
+  "version": "1.0.0",
+  "description": "Android app and PWA for writing and reading amounts in Khmer words",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "khmer",
+    "amount",
+    "currency",
+    "number-to-words",
+    "android",
+    "pwa"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}

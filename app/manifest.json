@@ -1,0 +1,21 @@
+{
+  "name": "អានចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ - Khmer Amount to Words",
+  "short_name": "អក្សរខ្មែរ",
+  "description": "កម្មវិធីបម្លែងចំនួនទឹកប្រាក់ និងតួលេខទៅជាអក្សរខ្មែរ សម្រាប់វិក្កយបត្រ មូលប្បទានប័ត្រ និងធនាគារ",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities", "productivity"],
+  "lang": "km"
+}

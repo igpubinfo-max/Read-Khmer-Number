@@ -1,0 +1,68 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout code
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 4. Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: 5. Build Debug and Release APK
+        run: |
+          cd android
+          ./gradlew assembleDebug assembleRelease --no-daemon
+
+      - name: 6. Prepare APK outputs
+        run: |
+          mkdir -p output_apks
+          # Find generated APKs
+          find android/app/build/outputs/apk -name "*.apk" -exec cp {} output_apks/ \;
+          ls -la output_apks/
+          cp output_apks/*debug.apk output_apks/KhmerAmountConverter.apk || true
+
+      - name: 7. Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhmerAmountConverter-APK
+          path: output_apks/*.apk
+          retention-days: 30
+
+      - name: 8. Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.0-${{ github.run_number }}
+          name: "Khmer Amount to Words Converter v1.0.0 (Build ${{ github.run_number }})"
+          body: |
+            ## កម្មវិធីអាន និងសរសេរចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ
+            ### Khmer Amount to Words Converter - Android APK
+
+            Download the installable `.apk` file below and open it on your Android phone!
+            
+            - **Package:** `com.khmeramount.converter`
+            - **Version:** `1.0.0`
+            - **Build Number:** `${{ github.run_number }}`
+          files: output_apks/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

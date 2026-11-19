@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-opacity="0.3" />
+
+  <!-- Inner glowing circle -->
+  <circle cx="256" cy="220" r="160" fill="url(#goldGrad)" fill-opacity="0.08" filter="url(#glow)" />
+  <circle cx="256" cy="220" r="150" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-dasharray="8 6" stroke-opacity="0.5" />
+
+  <!-- Central Currency Symbols: Khmer Riel and Dollar -->
+  <g filter="url(#glow)">
+    <!-- Khmer Riel Symbol (៛) -->
+    <text x="210" y="270" font-family="'Kantumruy Pro', 'Battambang', 'Hanuman', 'Khmer OS', sans-serif" font-size="190" font-weight="900" fill="url(#goldGrad)" text-anchor="middle">៛</text>
+    <!-- Dollar Symbol ($) -->
+    <text x="330" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="800" fill="url(#cyanGrad)" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Bottom Badge: "អក្សរខ្មែរ" (Khmer Words) -->
+  <g transform="translate(256, 420)">
+    <rect x="-160" y="-36" width="320" height="66" rx="33" fill="#1e293b" stroke="url(#goldGrad)" stroke-width="2.5" />
+    <text x="0" y="8" font-family="'Kantumruy Pro', 'Battambang', 'Khmer OS Siemreap', sans-serif" font-size="28" font-weight="700" fill="#f8fafc" text-anchor="middle" letter-spacing="1">
+      ជាអក្សរខ្មែរ
+    </text>
+  </g>
+
+  <!-- Decorative Sparkles -->
+  <path d="M 110 110 Q 125 125 140 125 Q 125 125 110 140 Q 125 125 110 110" fill="url(#goldGrad)" />
+  <path d="M 390 100 Q 400 112 410 112 Q 400 112 390 124 Q 400 112 390 100" fill="url(#cyanGrad)" />
+</svg>

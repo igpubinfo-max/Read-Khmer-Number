@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">អានចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ</string>
+    <string name="title_khmer_words">ចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ</string>
+    <string name="scale_banking">ស្តង់ដារធនាគារ (ពាន់, លាន)</string>
+    <string name="scale_traditional">រាប់បែបខ្មែរ (ម៉ឺន, សែន, លាន)</string>
+    <string name="opt_exact_kot">បញ្ចប់ដោយ "គត់"</string>
+    <string name="opt_spacing">ដកឃ្លាចន្លោះពាក្យ</string>
+    <string name="hint_amount">បញ្ចូលចំនួនទឹកប្រាក់ (0.00)</string>
+    <string name="btn_copy_words">ចម្លងអក្សរខ្មែរ</string>
+    <string name="btn_share">ចែករំលែក</string>
+    <string name="btn_speak">ស្តាប់សំឡេង</string>
+    <string name="toast_copied">បានចម្លងអក្សរខ្មែរជោគជ័យ!</string>
+    <string name="label_arabic_figures">ចំនួនជាលេខអារ៉ាប់</string>
+    <string name="label_khmer_figures">ចំនួនជាលេខខ្មែរ</string>
+</resources>
