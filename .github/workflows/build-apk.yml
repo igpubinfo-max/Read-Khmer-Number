@@ -28,15 +28,14 @@ jobs:
       - name: 4. Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: 5. Build Debug and Release APK
+      - name: 5. Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 6. Prepare APK outputs
         run: |
           mkdir -p output_apks
-          # Find generated APKs
           find android/app/build/outputs/apk -name "*.apk" -exec cp {} output_apks/ \;
           ls -la output_apks/
           cp output_apks/*debug.apk output_apks/KhmerAmountConverter.apk || true
