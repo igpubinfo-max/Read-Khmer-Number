@@ -4,8 +4,9 @@
  */
 
 class KhmerAmountConverter {
-  static DIGITS = ['សូន្យ', 'មួយ', 'ពីរ', 'បី', 'បួន', 'ប្រាំ', 'ប្រាំមួយ', 'ប្រាំពីរ', 'ប្រាំបី', 'ប្រាំបួន'];
+  static ONES = ['', 'មួយ', 'ពីរ', 'បី', 'បួន', 'ប្រាំ', 'ប្រាំមួយ', 'ប្រាំពីរ', 'ប្រាំបី', 'ប្រាំបួន'];
   static TENS = ['', 'ដប់', 'ម្ភៃ', 'សាមសិប', 'សែសិប', 'ហាសិប', 'ហុកសិប', 'ចិតសិប', 'ប៉ែតសិប', 'កៅសិប'];
+  static DIGITS = ['សូន្យ', 'មួយ', 'ពីរ', 'បី', 'បួន', 'ប្រាំ', 'ប្រាំមួយ', 'ប្រាំពីរ', 'ប្រាំបី', 'ប្រាំបួន'];
   static BANK_SCALES = ['', 'ពាន់', 'លាន', 'ពាន់លាន', 'ទ្រីលាន', 'ពាន់ទ្រីលាន'];
   static TRAD_POS = ['', '', 'រយ', 'ពាន់', 'ម៉ឺន', 'សែន', 'លាន'];
   static KM_NUMBERS = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
@@ -19,59 +20,134 @@ class KhmerAmountConverter {
   }
 
   /**
-   * Converts a 1-3 digit integer into Khmer words
+   * អានលេខ ៣ ខ្ទង់ (001 ដល់ 999) ជាខ្ទង់រយ ដប់ រាយ
+   * Corresponds directly to VBA Read3Digits(ByVal num As Long)
    */
-  static convertUnder1000(n, withSpaces = false) {
-    const sep = withSpaces ? ' ' : '';
-    let parts = [];
-    const hundreds = Math.floor(n / 100);
-    const remainder = n % 100;
+  static Read3Digits(num, withSpaces = false) {
+    num = Number(num);
+    const d100 = Math.floor(num / 100);
+    const d10 = Math.floor((num % 100) / 10);
+    const d1 = num % 10;
 
-    if (hundreds > 0) {
-      parts.push(this.DIGITS[hundreds] + (withSpaces ? ' ' : '') + 'រយ');
+    let s = '';
+    if (d100 > 0) {
+      s += this.ONES[d100] + (withSpaces ? ' ' : '') + 'រយ';
     }
-
-    if (remainder > 0) {
-      const tens = Math.floor(remainder / 10);
-      const units = remainder % 10;
-      if (tens > 0) {
-        parts.push(this.TENS[tens]);
-        if (units > 0) {
-          parts.push(this.DIGITS[units]);
-        }
-      } else {
-        parts.push(this.DIGITS[units]);
-      }
+    if (d10 > 0) {
+      s += (withSpaces && s ? ' ' : '') + this.TENS[d10];
     }
-    return parts.join(sep);
+    if (d1 > 0) {
+      s += (withSpaces && s ? ' ' : '') + this.ONES[d1];
+    }
+    return s;
   }
 
   /**
-   * Banking standard scale (Groups of 3 digits: ពាន់, លាន, ពាន់លាន)
+   * អានលេខជាអក្សរខ្មែរតាមក្បួន VBA KhmerNumber(ByVal n As Double)
+   * គាំទ្រខ្ទង់ពាន់លាន, លាន, ពាន់, រយ, ដប់, រាយ
    */
+  static KhmerNumber(n, withSpaces = false) {
+    let num = BigInt(Math.round(Number(n) || 0));
+    if (num === 0n) return this.DIGITS[0]; // 'សូន្យ'
+
+    let s = '';
+
+    // ខ្ទង់ពាន់លាន (Billions: >= 1,000,000,000)
+    const oneBillion = 1000000000n;
+    if (num >= oneBillion) {
+      const bil = num / oneBillion;
+      const bilWords = bil < 1000n
+        ? this.Read3Digits(Number(bil), withSpaces)
+        : this.KhmerNumber(bil, withSpaces);
+      s += (s && withSpaces ? ' ' : '') + bilWords + (withSpaces ? ' ' : '') + 'ពាន់លាន';
+      num = num - (bil * oneBillion);
+    }
+
+    // ខ្ទង់លាន (Millions: >= 1,000,000)
+    const oneMillion = 1000000n;
+    if (num >= oneMillion) {
+      const mil = num / oneMillion;
+      s += (s && withSpaces ? ' ' : '') + this.Read3Digits(Number(mil), withSpaces) + (withSpaces ? ' ' : '') + 'លាន';
+      num = num - (mil * oneMillion);
+    }
+
+    // ខ្ទង់ពាន់ (Thousands: >= 1,000)
+    const oneThousand = 1000n;
+    if (num >= oneThousand) {
+      const tho = num / oneThousand;
+      s += (s && withSpaces ? ' ' : '') + this.Read3Digits(Number(tho), withSpaces) + (withSpaces ? ' ' : '') + 'ពាន់';
+      num = num - (tho * oneThousand);
+    }
+
+    // ខ្ទង់រយ ដប់ រាយ (Hundreds, Tens, Ones)
+    if (num > 0n) {
+      s += (s && withSpaces ? ' ' : '') + this.Read3Digits(Number(num), withSpaces);
+    }
+
+    return s;
+  }
+
+  /**
+   * អានប្រាក់រៀលតាម VBA KhmerRiel(ByVal amount As Double)
+   */
+  static KhmerRiel(amount, withSpaces = false, useExactKot = true) {
+    const num = Math.round(Number(amount) || 0);
+    const words = this.KhmerNumber(num, withSpaces);
+    const suffix = useExactKot
+      ? (withSpaces ? ' ' : '') + 'រៀលគត់'
+      : (withSpaces ? ' ' : '') + 'រៀល';
+    return words + suffix;
+  }
+
+  /**
+   * អានប្រាក់ដុល្លារតាម VBA KhmerUSD(ByVal amount As Double)
+   */
+  static KhmerUSD(amount, withSpaces = false, useExactKot = true) {
+    const clean = Math.abs(Number(amount) || 0);
+    const whole = Math.floor(clean);
+    const cents = Math.round((clean - whole) * 100);
+    const wholeWords = this.KhmerNumber(whole, withSpaces);
+
+    if (cents === 0) {
+      const suffix = useExactKot
+        ? (withSpaces ? ' ' : '') + 'ដុល្លារគត់'
+        : (withSpaces ? ' ' : '') + 'ដុល្លារ';
+      return wholeWords + suffix;
+    } else {
+      const centsWords = this.KhmerNumber(cents, withSpaces);
+      const andWord = withSpaces ? ' ដុល្លារ និង ' : 'ដុល្លារនិង';
+      return wholeWords + andWord + centsWords + (withSpaces ? ' ' : '') + 'សេន';
+    }
+  }
+
+  /**
+   * អានប្រាក់បាត (THB) តាមក្បួនដូចគ្នា
+   */
+  static KhmerTHB(amount, withSpaces = false, useExactKot = true) {
+    const clean = Math.abs(Number(amount) || 0);
+    const whole = Math.floor(clean);
+    const satang = Math.round((clean - whole) * 100);
+    const wholeWords = this.KhmerNumber(whole, withSpaces);
+
+    if (satang === 0) {
+      const suffix = useExactKot
+        ? (withSpaces ? ' ' : '') + 'បាតគត់'
+        : (withSpaces ? ' ' : '') + 'បាត';
+      return wholeWords + suffix;
+    } else {
+      const satangWords = this.KhmerNumber(satang, withSpaces);
+      const andWord = withSpaces ? ' បាត និង ' : 'បាតនិង';
+      return wholeWords + andWord + satangWords + (withSpaces ? ' ' : '') + 'ស្តាង្គ';
+    }
+  }
+
+  // Aliases for compatibility
+  static convertUnder1000(n, withSpaces = false) {
+    return this.Read3Digits(n, withSpaces);
+  }
+
   static convertBanking(intStr, withSpaces = false) {
-    intStr = intStr.toString().replace(/^0+/, '');
-    if (!intStr) return this.DIGITS[0];
-
-    const sep = withSpaces ? ' ' : '';
-    const groups = [];
-    let s = intStr;
-    while (s.length > 0) {
-      const start = Math.max(0, s.length - 3);
-      groups.push(parseInt(s.slice(start), 10));
-      s = s.slice(0, start);
-    }
-
-    let result = [];
-    for (let i = groups.length - 1; i >= 0; i--) {
-      const g = groups[i];
-      if (g > 0) {
-        const words = this.convertUnder1000(g, withSpaces);
-        const scale = this.BANK_SCALES[i] ? this.BANK_SCALES[i] : '';
-        result.push(scale ? words + (withSpaces ? ' ' : '') + scale : words);
-      }
-    }
-    return result.join(sep) || this.DIGITS[0];
+    return this.KhmerNumber(intStr, withSpaces);
   }
 
   /**
@@ -91,9 +167,9 @@ class KhmerAmountConverter {
       if (pos === 1) {
         parts.push(this.TENS[d]);
       } else if (pos === 0) {
-        parts.push(this.DIGITS[d]);
+        parts.push(this.ONES[d]);
       } else {
-        parts.push(this.DIGITS[d] + (withSpaces ? ' ' : '') + this.TRAD_POS[pos]);
+        parts.push(this.ONES[d] + (withSpaces ? ' ' : '') + this.TRAD_POS[pos]);
       }
     }
     return parts.join(sep);
@@ -144,60 +220,77 @@ class KhmerAmountConverter {
     const intPart = parts[0] || '0';
     const fracPart = parts.length > 1 ? parts[1] : '';
 
-    const toWords = (str) => mode === 'traditional'
-      ? this.convertTraditional(str, withSpaces)
-      : this.convertBanking(str, withSpaces);
-
-    const sep = withSpaces ? ' ' : '';
-    const intNum = BigInt(intPart || '0');
-    const intWords = toWords(intPart);
-    let resultWords = '';
-
     let symbol = '$';
     let currencyName = 'ដុល្លារ';
+    let resultWords = '';
 
-    if (currency === 'KHR') {
-      symbol = '៛';
-      currencyName = 'រៀល';
-      resultWords = intWords + sep + currencyName;
-      if (useExactKot && (!fracPart || Number(fracPart) === 0)) {
-        resultWords += sep + 'គត់';
-      }
-    } else if (currency === 'USD') {
-      symbol = '$';
-      currencyName = 'ដុល្លារ';
-      const centsStr = fracPart ? (fracPart.length === 1 ? fracPart + '0' : fracPart.slice(0, 2)) : '00';
-      const centsNum = parseInt(centsStr, 10);
-
-      if (intNum === 0n && centsNum > 0) {
-        resultWords = toWords(centsNum.toString()) + sep + 'សេន';
+    if (mode === 'banking') {
+      if (currency === 'KHR') {
+        symbol = '៛';
+        currencyName = 'រៀល';
+        resultWords = this.KhmerRiel(clean, withSpaces, useExactKot);
+      } else if (currency === 'USD') {
+        symbol = '$';
+        currencyName = 'ដុល្លារ';
+        resultWords = this.KhmerUSD(clean, withSpaces, useExactKot);
+      } else if (currency === 'THB') {
+        symbol = '฿';
+        currencyName = 'បាត';
+        resultWords = this.KhmerTHB(clean, withSpaces, useExactKot);
       } else {
-        resultWords = intWords + sep + currencyName;
-        if (centsNum > 0) {
-          resultWords += sep + 'និង' + sep + toWords(centsNum.toString()) + sep + 'សេន';
-        } else if (useExactKot) {
-          resultWords += sep + 'គត់';
+        // NONE (plain numbers)
+        symbol = '';
+        currencyName = '';
+        const wholeWords = this.KhmerNumber(intPart, withSpaces);
+        if (fracPart && Number(fracPart) > 0) {
+          const fracWords = fracPart.split('').map(d => this.DIGITS[parseInt(d, 10)]).join(withSpaces ? ' ' : '');
+          resultWords = wholeWords + (withSpaces ? ' ' : '') + 'ចុច' + (withSpaces ? ' ' : '') + fracWords;
+        } else {
+          resultWords = wholeWords;
         }
       }
-    } else if (currency === 'THB') {
-      symbol = '฿';
-      currencyName = 'បាត';
-      const satangStr = fracPart ? (fracPart.length === 1 ? fracPart + '0' : fracPart.slice(0, 2)) : '00';
-      const satangNum = parseInt(satangStr, 10);
-
-      resultWords = intWords + sep + currencyName;
-      if (satangNum > 0) {
-        resultWords += sep + 'និង' + sep + toWords(satangNum.toString()) + sep + 'ស្តាង្គ';
-      } else if (useExactKot) {
-        resultWords += sep + 'គត់';
-      }
     } else {
-      // NONE (plain numbers)
-      symbol = '';
-      resultWords = intWords;
-      if (fracPart && Number(fracPart) > 0) {
-        const fracWords = fracPart.split('').map(d => this.DIGITS[parseInt(d, 10)]).join(sep);
-        resultWords += sep + 'ចុច' + sep + fracWords;
+      // Traditional scale (ម៉ឺន, សែន, លាន)
+      const toWords = (str) => this.convertTraditional(str, withSpaces);
+      const intNum = BigInt(intPart || '0');
+      const intWords = toWords(intPart);
+      const sep = withSpaces ? ' ' : '';
+
+      if (currency === 'KHR') {
+        symbol = '៛';
+        currencyName = 'រៀល';
+        resultWords = intWords + sep + currencyName;
+        if (useExactKot && (!fracPart || Number(fracPart) === 0)) {
+          resultWords += sep + 'គត់';
+        }
+      } else if (currency === 'USD') {
+        symbol = '$';
+        currencyName = 'ដុល្លារ';
+        const centsStr = fracPart ? (fracPart.length === 1 ? fracPart + '0' : fracPart.slice(0, 2)) : '00';
+        const centsNum = parseInt(centsStr, 10);
+        if (centsNum === 0) {
+          resultWords = intWords + sep + currencyName + (useExactKot ? sep + 'គត់' : '');
+        } else {
+          resultWords = intWords + sep + currencyName + sep + 'និង' + sep + toWords(centsNum.toString()) + sep + 'សេន';
+        }
+      } else if (currency === 'THB') {
+        symbol = '฿';
+        currencyName = 'បាត';
+        const satangStr = fracPart ? (fracPart.length === 1 ? fracPart + '0' : fracPart.slice(0, 2)) : '00';
+        const satangNum = parseInt(satangStr, 10);
+        if (satangNum === 0) {
+          resultWords = intWords + sep + currencyName + (useExactKot ? sep + 'គត់' : '');
+        } else {
+          resultWords = intWords + sep + currencyName + sep + 'និង' + sep + toWords(satangNum.toString()) + sep + 'ស្តាង្គ';
+        }
+      } else {
+        symbol = '';
+        currencyName = '';
+        resultWords = intWords;
+        if (fracPart && Number(fracPart) > 0) {
+          const fracWords = fracPart.split('').map(d => this.DIGITS[parseInt(d, 10)]).join(sep);
+          resultWords += sep + 'ចុច' + sep + fracWords;
+        }
       }
     }
 
@@ -279,6 +372,14 @@ function initElements() {
   elements.quickDownloadJpgBtn = document.getElementById('quickDownloadJpgBtn');
   elements.quickPrintBtn = document.getElementById('quickPrintBtn');
   elements.receiptCanvas = document.getElementById('receiptCanvas');
+
+  // VBA Modal Elements
+  elements.vbaModalBtn = document.getElementById('vbaModalBtn');
+  elements.vbaModal = document.getElementById('vbaModal');
+  elements.closeVbaModalBtn = document.getElementById('closeVbaModalBtn');
+  elements.dismissVbaModalBtn = document.getElementById('dismissVbaModalBtn');
+  elements.copyVbaBtn = document.getElementById('copyVbaBtn');
+  elements.vbaCodeContent = document.getElementById('vbaCodeContent');
 }
 
 function showToast(message, duration = 2500) {
@@ -742,6 +843,37 @@ function setupEventListeners() {
       const voucher = `==== បង្កាន់ដៃទូទាត់ប្រាក់ / PAYMENT RECEIPT ====\nលេខវិក្កយបត្រ (No)៖ ${receiptNo}\nកាលបរិច្ឆេទ (Date)៖ ${date}\nបង់ជូនឈ្មោះ (Client)៖ ${payee || '---'}\nទូទាត់តាម (Method)៖ ${method}\nចំនួនទឹកប្រាក់ជាលេខ (Amount)៖ ${figures}\nចំនួនទឹកប្រាក់ជាអក្សរ (In Words)៖ ${words}\nសម្រាប់ (Memo)៖ ${memo || '---'}\nស្ថានភាព៖ ★ បានទូទាត់រួចរាល់ (PAID) ★\n=================================================`;
       navigator.clipboard.writeText(voucher).then(() => {
         showToast('បានចម្លងព័ត៌មានបង្កាន់ដៃ! ✅');
+      });
+    });
+  }
+
+  // VBA Modal Events
+  if (elements.vbaModalBtn) {
+    elements.vbaModalBtn.addEventListener('click', () => {
+      if (elements.vbaModal) elements.vbaModal.classList.add('active');
+    });
+  }
+  if (elements.closeVbaModalBtn) {
+    elements.closeVbaModalBtn.addEventListener('click', () => {
+      if (elements.vbaModal) elements.vbaModal.classList.remove('active');
+    });
+  }
+  if (elements.dismissVbaModalBtn) {
+    elements.dismissVbaModalBtn.addEventListener('click', () => {
+      if (elements.vbaModal) elements.vbaModal.classList.remove('active');
+    });
+  }
+  if (elements.vbaModal) {
+    elements.vbaModal.addEventListener('click', (e) => {
+      if (e.target === elements.vbaModal) {
+        elements.vbaModal.classList.remove('active');
+      }
+    });
+  }
+  if (elements.copyVbaBtn && elements.vbaCodeContent) {
+    elements.copyVbaBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(elements.vbaCodeContent.textContent).then(() => {
+        showToast('បានចម្លងកូដ VBA សម្រាប់ Excel រួចរាល់! 📋');
       });
     });
   }

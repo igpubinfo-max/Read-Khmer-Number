@@ -35,6 +35,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="vbaModalBtn" class="btn-action btn-secondary" style="font-size: 11px; padding: 6px 10px; border-radius: 8px; width: auto;" title="កូដ VBA សម្រាប់ Microsoft Excel">
+          📊 VBA Excel
+        </button>
         <button id="installBtn" class="install-btn" style="display: none;" title="ដំឡើងលើទូរស័ព្ទ Android">
           📲 ដំឡើង App
         </button>
@@ -312,6 +315,146 @@
         </ul>
       </section>
     </main>
+
+    <!-- VBA Excel Modal -->
+    <div id="vbaModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📊</span>
+            <span>កូដ VBA សម្រាប់ Microsoft Excel</span>
+          </div>
+          <button id="closeVbaModalBtn" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p><strong>💡 របៀបប្រើប្រាស់ក្នុង Microsoft Excel:</strong></p>
+          <ol style="margin-left: 18px; margin-top: 4px; margin-bottom: 8px;">
+            <li>ចុច <code>ALT + F11</code> លើក្ដារចុច ដើម្បីបើក VBA Editor</li>
+            <li>ចុច <code>Insert</code> &rarr; <code>Module</code></li>
+            <li>ចុចប៊ូតុង <strong>ចម្លងកូដ VBA</strong> ខាងក្រោម រួច <code>Ctrl + V</code> (Paste)</li>
+            <li>ក្នុង Excel Cell អាចប្រើរូបមន្ត៖
+              <ul style="margin-left: 16px; margin-top: 4px;">
+                <li><code>=KhmerUSD(A1)</code> &rarr; អានជាប្រាក់ដុល្លារ</li>
+                <li><code>=KhmerRiel(A1)</code> &rarr; អានជាប្រាក់រៀល</li>
+                <li><code>=KhmerNumber(A1)</code> &rarr; អានជាលេខសុទ្ធ</li>
+              </ul>
+            </li>
+          </ol>
+          <div id="vbaCodeContent" class="modal-code-box">Option Explicit
+
+Private Function K(ByVal hexStr As String) As String
+    Dim i As Long, res As String
+    For i = 1 To Len(hexStr) Step 4
+        res = res & ChrW(Val("&H" & Mid(hexStr, i, 4)))
+    Next i
+    K = res
+End Function
+
+' អានលេខ ៣ ខ្ទង់ (001 ដល់ 999) ជាខ្ទង់រយ ដប់ រាយ
+Private Function Read3Digits(ByVal num As Long) As String
+    Dim ones(0 To 9) As String, tens(0 To 9) As String
+    ones(0) = ""
+    ones(1) = K("179817BD1799")                         ' មួយ
+    ones(2) = K("179617B8179A")                         ' ពីរ
+    ones(3) = K("179417B8")                             ' បី
+    ones(4) = K("179417BD1793")                         ' បួន
+    ones(5) = K("179417D2179A17B617C6")                 ' ប្រាំ
+    ones(6) = K("179417D2179A17B617C6179817BD1799")     ' ប្រាំមួយ
+    ones(7) = K("179417D2179A17B617C6179617B8179A")     ' ប្រាំពីរ
+    ones(8) = K("179417D2179A17B617C6179417B8")         ' ប្រាំបី
+    ones(9) = K("179417D2179A17B617C6179417BD1793")     ' ប្រាំបួន
+
+    tens(0) = ""
+    tens(1) = K("178A179417CB")                         ' ដប់
+    tens(2) = K("179817D2179717C3")                     ' ម្ភៃ
+    tens(3) = K("179F17B61798179F17B71794")             ' សាមសិប
+    tens(4) = K("179F17C2179F17B71794")                 ' សែសិប
+    tens(5) = K("17A017B6179F17B71794")                 ' ហាសិប
+    tens(6) = K("17A017BB1780179F17B71794")             ' ហុកសិប
+    tens(7) = K("178517B7178F179F17B71794")             ' ចិតសិប
+    tens(8) = K("179417C917C2178F179F17B71794")         ' ប៉ែតសិប
+    tens(9) = K("178017C5179F17B71794")                 ' កៅសិប
+
+    Dim d100 As Long, d10 As Long, d1 As Long, s As String
+    d100 = Int(num / 100)
+    d10 = Int((num Mod 100) / 10)
+    d1 = num Mod 10
+
+    s = ""
+    If d100 > 0 Then s = s & ones(d100) & K("179A1799") ' រយ
+    If d10 > 0 Then s = s & tens(d10)
+    If d1 > 0 Then s = s & ones(d1)
+
+    Read3Digits = s
+End Function
+
+Public Function KhmerNumber(ByVal n As Double) As String
+    n = Round(n, 0)
+    If n = 0 Then
+        KhmerNumber = K("179F17BC179317D21799")         ' សូន្យ
+        Exit Function
+    End If
+
+    Dim bil As Long, mil As Long, tho As Long, remNum As Long
+    Dim s As String
+    s = ""
+
+    ' ខ្ទង់ពាន់លាន (Billions)
+    If n >= 1000000000# Then
+        bil = Int(n / 1000000000#)
+        s = s & Read3Digits(bil) & K("179617B6179317CB179B17B61793") ' ពាន់លាន
+        n = n - (CDbl(bil) * 1000000000#)
+    End If
+
+    ' ខ្ទង់លាន (Millions)
+    If n >= 1000000# Then
+        mil = Int(n / 1000000#)
+        s = s & Read3Digits(mil) & K("179B17B61793")    ' លាន
+        n = n - (CDbl(mil) * 1000000#)
+    End If
+
+    ' ខ្ទង់ពាន់ (Thousands)
+    If n >= 1000# Then
+        tho = Int(n / 1000#)
+        s = s & Read3Digits(tho) & K("179617B6179317CB") ' ពាន់
+        n = n - (CDbl(tho) * 1000#)
+    End If
+
+    ' ខ្ទង់រយ ដប់ រាយ (Hundreds, Tens, Ones)
+    remNum = CLng(n)
+    If remNum > 0 Then
+        s = s & Read3Digits(remNum)
+    End If
+
+    KhmerNumber = s
+End Function
+
+Public Function KhmerRiel(ByVal amount As Double) As String
+    KhmerRiel = KhmerNumber(Round(amount, 0)) & K("179A17C0179B1782178F17CB") ' រៀលគត់
+End Function
+
+Public Function KhmerUSD(ByVal amount As Double) As String
+    Dim whole As Double, cents As Long
+    whole = Int(amount)
+    cents = Round((amount - whole) * 100, 0)
+    If cents = 0 Then
+        KhmerUSD = KhmerNumber(whole) & K("178A17BB179B17D2179B17B6179A1782178F17CB") ' ដុល្លារគត់
+    Else
+        KhmerUSD = KhmerNumber(whole) & K("178A17BB179B17D2179B17B6179A179317B71784") & KhmerNumber(cents) & K("179F17C11793") ' ដុល្លារនិង...សេន
+    End If
+End Function</div>
+        </div>
+        <div class="modal-footer">
+          <button id="copyVbaBtn" class="btn-action btn-primary" style="font-size: 13px; padding: 8px 16px;">
+            <span>📋</span>
+            <span>ចម្លងកូដ VBA (Copy Code)</span>
+          </button>
+          <button id="dismissVbaModalBtn" class="btn-action btn-secondary" style="font-size: 13px; padding: 8px 16px;">
+            <span>បិទ</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Toast Notification Banner -->
     <div id="toast" class="toast">បានចម្លង!</div>
