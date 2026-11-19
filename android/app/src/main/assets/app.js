@@ -264,13 +264,21 @@ function initElements() {
   elements.onScreenKeypad = document.getElementById('onScreenKeypad');
   
   // Cheque Elements
+  elements.chequeReceiptNo = document.getElementById('chequeReceiptNo');
   elements.chequeDate = document.getElementById('chequeDate');
   elements.chequePayee = document.getElementById('chequePayee');
+  elements.chequePaymentMethod = document.getElementById('chequePaymentMethod');
   elements.chequeWords = document.getElementById('chequeWords');
   elements.chequeFigures = document.getElementById('chequeFigures');
+  elements.chequeKmDigits = document.getElementById('chequeKmDigits');
   elements.chequeMemo = document.getElementById('chequeMemo');
   elements.printChequeBtn = document.getElementById('printChequeBtn');
   elements.copyChequeBtn = document.getElementById('copyChequeBtn');
+  elements.downloadJpgBtn = document.getElementById('downloadJpgBtn');
+  elements.shareJpgBtn = document.getElementById('shareJpgBtn');
+  elements.quickDownloadJpgBtn = document.getElementById('quickDownloadJpgBtn');
+  elements.quickPrintBtn = document.getElementById('quickPrintBtn');
+  elements.receiptCanvas = document.getElementById('receiptCanvas');
 }
 
 function showToast(message, duration = 2500) {
@@ -360,6 +368,7 @@ function updateConversion(saveToHistory = false) {
     // Update Cheque Preview
     if (elements.chequeWords) elements.chequeWords.textContent = result.khmerWords;
     if (elements.chequeFigures) elements.chequeFigures.textContent = result.formattedNumber;
+    if (elements.chequeKmDigits) elements.chequeKmDigits.textContent = result.khmerDigits;
 
     if (saveToHistory && state.amount && Number(state.amount) > 0) {
       addHistoryItem(state.amount, result.khmerWords, result.formattedNumber);
@@ -689,27 +698,402 @@ function setupEventListeners() {
     }
   });
 
-  // Cheque actions
+  // Cheque & Print/JPG Actions
   if (elements.printChequeBtn) {
     elements.printChequeBtn.addEventListener('click', () => {
       window.print();
     });
   }
 
+  if (elements.quickPrintBtn) {
+    elements.quickPrintBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  if (elements.downloadJpgBtn) {
+    elements.downloadJpgBtn.addEventListener('click', () => {
+      downloadReceiptJPG();
+    });
+  }
+
+  if (elements.quickDownloadJpgBtn) {
+    elements.quickDownloadJpgBtn.addEventListener('click', () => {
+      downloadReceiptJPG();
+    });
+  }
+
+  if (elements.shareJpgBtn) {
+    elements.shareJpgBtn.addEventListener('click', () => {
+      shareReceiptJPG();
+    });
+  }
+
   if (elements.copyChequeBtn) {
     elements.copyChequeBtn.addEventListener('click', () => {
+      const receiptNo = elements.chequeReceiptNo ? elements.chequeReceiptNo.value : 'REC-001';
       const date = elements.chequeDate ? elements.chequeDate.value : '';
       const payee = elements.chequePayee ? elements.chequePayee.value : '';
+      const method = elements.chequePaymentMethod ? elements.chequePaymentMethod.value : 'សាច់ប្រាក់';
       const words = elements.chequeWords ? elements.chequeWords.textContent : '';
       const figures = elements.chequeFigures ? elements.chequeFigures.textContent : '';
       const memo = elements.chequeMemo ? elements.chequeMemo.value : '';
 
-      const voucher = `==== បង្កាន់ដៃទូទាត់ / PAYMENT VOUCHER ====\nកាលបរិច្ឆេទ៖ ${date}\nបង់ជូនឈ្មោះ៖ ${payee || '---'}\nចំនួនទឹកប្រាក់ជាលេខ៖ ${figures}\nចំនួនទឹកប្រាក់ជាអក្សរ៖ ${words}\nសម្រាប់៖ ${memo || '---'}\n===========================================`;
+      const voucher = `==== បង្កាន់ដៃទូទាត់ប្រាក់ / PAYMENT RECEIPT ====\nលេខវិក្កយបត្រ (No)៖ ${receiptNo}\nកាលបរិច្ឆេទ (Date)៖ ${date}\nបង់ជូនឈ្មោះ (Client)៖ ${payee || '---'}\nទូទាត់តាម (Method)៖ ${method}\nចំនួនទឹកប្រាក់ជាលេខ (Amount)៖ ${figures}\nចំនួនទឹកប្រាក់ជាអក្សរ (In Words)៖ ${words}\nសម្រាប់ (Memo)៖ ${memo || '---'}\nស្ថានភាព៖ ★ បានទូទាត់រួចរាល់ (PAID) ★\n=================================================`;
       navigator.clipboard.writeText(voucher).then(() => {
-        showToast('បានចម្លងបង្កាន់ដៃទូទាត់! ✅');
+        showToast('បានចម្លងព័ត៌មានបង្កាន់ដៃ! ✅');
       });
     });
   }
+}
+
+// Canvas Rendering for Crisp JPG Receipt Export
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  let currentY = y;
+
+  if (words.length > 1) {
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, currentY);
+        line = words[n] + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line.trim(), x, currentY);
+  } else {
+    let currentLine = '';
+    for (let i = 0; i < text.length; i++) {
+      const testLine = currentLine + text[i];
+      if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+        ctx.fillText(currentLine, x, currentY);
+        currentLine = text[i];
+        currentY += lineHeight;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    ctx.fillText(currentLine, x, currentY);
+  }
+}
+
+function generateReceiptCanvas() {
+  const canvas = elements.receiptCanvas || document.createElement('canvas');
+  const width = 1200;
+  const height = 750;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  // Background - high quality paper texture tone
+  ctx.fillStyle = '#FAF9F5';
+  ctx.fillRect(0, 0, width, height);
+
+  // Outer ornate double border
+  ctx.strokeStyle = '#0F2C59';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(20, 20, width - 40, height - 40);
+
+  ctx.strokeStyle = '#C5A880';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(28, 28, width - 56, height - 56);
+
+  // Corner decorations
+  const corners = [
+    [28, 28], [width - 28, 28],
+    [28, height - 28], [width - 28, height - 28]
+  ];
+  ctx.fillStyle = '#C5A880';
+  corners.forEach(([cx, cy]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Background subtle watermark
+  ctx.save();
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate(-Math.PI / 12);
+  ctx.font = 'bold 46px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = 'rgba(15, 44, 89, 0.035)';
+  ctx.textAlign = 'center';
+  ctx.fillText('KHMER AMOUNT CONVERTER • OFFICIAL RECEIPT', 0, 0);
+  ctx.restore();
+
+  // Top Header: Currency Badge
+  ctx.save();
+  ctx.fillStyle = '#0F2C59';
+  ctx.beginPath();
+  ctx.arc(75, 75, 32, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#C5A880';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.font = 'bold 30px "Kantumruy Pro", "Battambang", sans-serif';
+  ctx.fillStyle = '#F59E0B';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('៛', 73, 75);
+  ctx.restore();
+
+  // Header Titles
+  ctx.font = 'bold 28px "Kantumruy Pro", "Battambang", sans-serif';
+  ctx.fillStyle = '#0F2C59';
+  ctx.textAlign = 'left';
+  ctx.fillText('បង្កាន់ដៃទទួលប្រាក់', 125, 68);
+
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillStyle = '#A16207';
+  ctx.fillText('OFFICIAL PAYMENT VOUCHER / RECEIPT', 125, 94);
+
+  // Top Right Meta Box
+  const receiptNo = (elements.chequeReceiptNo && elements.chequeReceiptNo.value.trim()) ? elements.chequeReceiptNo.value.trim() : 'REC-001';
+  const receiptDate = (elements.chequeDate && elements.chequeDate.value) ? elements.chequeDate.value : new Date().toISOString().split('T')[0];
+
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 15px monospace';
+  ctx.fillStyle = '#0F2C59';
+  ctx.fillText('លេខវិក្កយបត្រ (No): ' + receiptNo, width - 50, 68);
+
+  ctx.font = '14px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#64748B';
+  ctx.fillText('កាលបរិច្ឆេទ (Date): ' + receiptDate, width - 50, 94);
+
+  // Divider Line
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(50, 120);
+  ctx.lineTo(width - 50, 120);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#C5A880';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(50, 120);
+  ctx.lineTo(250, 120);
+  ctx.stroke();
+
+  // Client Details Row
+  const payee = (elements.chequePayee && elements.chequePayee.value.trim()) ? elements.chequePayee.value.trim() : 'អតិថិជនទូទៅ (General Client)';
+  const paymentMethod = elements.chequePaymentMethod ? elements.chequePaymentMethod.value : 'សាច់ប្រាក់ (Cash)';
+
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 16px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.fillText('បង់ជូនឈ្មោះ (Client / Payee):', 55, 160);
+
+  ctx.font = 'bold 18px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#0F2C59';
+  ctx.fillText(payee, 305, 160);
+
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(300, 168);
+  ctx.lineTo(width - 55, 168);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Payment Method Row
+  ctx.font = 'bold 16px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.fillText('ទូទាត់តាម (Payment Method):', 55, 205);
+
+  ctx.font = 'bold 16px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#0284C7';
+  ctx.fillText(paymentMethod, 305, 205);
+
+  // Box 1: Amount in Figures
+  const figures = (elements.chequeFigures && elements.chequeFigures.textContent !== '---') ? elements.chequeFigures.textContent : elements.formattedAmount.textContent;
+  const kmDigits = (elements.chequeKmDigits && elements.chequeKmDigits.textContent !== '---') ? elements.chequeKmDigits.textContent : elements.khmerDigits.textContent;
+
+  ctx.fillStyle = '#EFF6FF';
+  ctx.fillRect(55, 235, width - 110, 75);
+  ctx.strokeStyle = '#3B82F6';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(55, 235, width - 110, 75);
+
+  ctx.font = 'bold 15px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#1E3A8A';
+  ctx.fillText('ចំនួនទឹកប្រាក់ជាលេខ (Amount in Figures):', 75, 260);
+
+  ctx.font = '900 28px monospace';
+  ctx.fillStyle = '#1D4ED8';
+  ctx.fillText(figures, 75, 295);
+
+  if (kmDigits && kmDigits !== '---') {
+    ctx.font = 'bold 20px "Kantumruy Pro", sans-serif';
+    ctx.fillStyle = '#B45309';
+    ctx.textAlign = 'right';
+    ctx.fillText('( ' + kmDigits + ' )', width - 75, 295);
+    ctx.textAlign = 'left';
+  }
+
+  // Box 2: Amount in Khmer Words (The Star Feature)
+  const words = (elements.chequeWords && elements.chequeWords.textContent !== '---') ? elements.chequeWords.textContent : elements.khmerWords.textContent;
+
+  ctx.fillStyle = '#FEFCE8';
+  ctx.fillRect(55, 330, width - 110, 115);
+  ctx.strokeStyle = '#CA8A04';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(55, 330, width - 110, 115);
+
+  ctx.font = 'bold 16px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#854D0E';
+  ctx.fillText('ចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ (In Khmer Words):', 75, 360);
+
+  ctx.font = 'bold 22px "Kantumruy Pro", "Battambang", sans-serif';
+  ctx.fillStyle = '#78350F';
+  wrapText(ctx, words, 75, 395, width - 150, 32);
+
+  // Memo / Description Row
+  const memo = (elements.chequeMemo && elements.chequeMemo.value.trim()) ? elements.chequeMemo.value.trim() : 'ទូទាត់ថ្លៃទំនិញ និងសេវាកម្ម (Payment for goods & services)';
+  ctx.font = 'bold 15px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#475569';
+  ctx.fillText('សម្រាប់ (Description / For):', 55, 480);
+
+  ctx.font = '16px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#0F172A';
+  ctx.fillText(memo, 295, 480);
+
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(290, 488);
+  ctx.lineTo(width - 55, 488);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Footer Section
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(50, 520);
+  ctx.lineTo(width - 50, 520);
+  ctx.stroke();
+
+  // Notes on left
+  ctx.font = '13px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#64748B';
+  ctx.fillText('* បង្កាន់ដៃត្រឹមត្រូវតាមច្បាប់ • សូមរក្សាទុកជាភស្តុតាងនៃការទូទាត់', 55, 550);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#94A3B8';
+  ctx.fillText('Issued via Khmer Amount Converter App • Ready for accounting & audit', 55, 570);
+
+  // Red Official PAID Stamp
+  ctx.save();
+  ctx.translate(width / 2 + 80, 595);
+  ctx.rotate(-10 * Math.PI / 180);
+
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 3.5;
+  ctx.fillStyle = 'rgba(220, 38, 38, 0.08)';
+  ctx.strokeRect(-90, -35, 180, 70);
+  ctx.fillRect(-90, -35, 180, 70);
+
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-84, -30, 168, 60);
+
+  ctx.fillStyle = '#DC2626';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('★ ★ ★', 0, -14);
+
+  ctx.font = 'bold 15px "Kantumruy Pro", sans-serif';
+  ctx.fillText('បានទូទាត់', 0, 4);
+
+  ctx.font = '900 18px monospace';
+  ctx.letterSpacing = '2px';
+  ctx.fillText('PAID', 0, 24);
+  ctx.restore();
+
+  // Right: Signature Line
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = '#0F2C59';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(width - 230, 630);
+  ctx.lineTo(width - 55, 630);
+  ctx.stroke();
+
+  ctx.font = 'bold 14px "Kantumruy Pro", sans-serif';
+  ctx.fillStyle = '#0F2C59';
+  ctx.fillText('ហត្ថលេខា និងត្រាអ្នកទទួល', width - 142, 650);
+
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#64748B';
+  ctx.fillText('Authorized Signature', width - 142, 668);
+
+  return canvas;
+}
+
+function downloadReceiptJPG() {
+  const words = elements.khmerWords.textContent;
+  if (!words || words.includes('សូមបញ្ចូល')) {
+    showToast('សូមបញ្ចូលចំនួនទឹកប្រាក់ជាមុនសិន!');
+    return;
+  }
+
+  const canvas = generateReceiptCanvas();
+  const dateStr = elements.chequeDate ? elements.chequeDate.value.replace(/-/g, '') : 'date';
+  const cleanAmt = state.amount ? state.amount.replace(/[^0-9.]/g, '') : 'amount';
+  const filename = `Receipt_${cleanAmt}_${state.currency}_${dateStr}.jpg`;
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 150);
+    showToast('បានទាញយកឯកសារ JPG ជោគជ័យ! ✅');
+  }, 'image/jpeg', 0.95);
+}
+
+async function shareReceiptJPG() {
+  const words = elements.khmerWords.textContent;
+  if (!words || words.includes('សូមបញ្ចូល')) {
+    showToast('សូមបញ្ចូលចំនួនទឹកប្រាក់ជាមុនសិន!');
+    return;
+  }
+
+  const canvas = generateReceiptCanvas();
+  const dateStr = elements.chequeDate ? elements.chequeDate.value.replace(/-/g, '') : 'date';
+  const cleanAmt = state.amount ? state.amount.replace(/[^0-9.]/g, '') : 'amount';
+  const filename = `Receipt_${cleanAmt}_${state.currency}_${dateStr}.jpg`;
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], filename, { type: 'image/jpeg' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: 'បង្កាន់ដៃទូទាត់ប្រាក់ (Payment Receipt)',
+          text: `បង្កាន់ដៃទូទាត់ប្រាក់៖ ${elements.formattedAmount.textContent}\nជាអក្សរខ្មែរ៖ ${elements.khmerWords.textContent}`,
+          files: [file]
+        });
+      } catch (err) {}
+    } else {
+      downloadReceiptJPG();
+      showToast('ឧបករណ៍នេះមិនគាំទ្រ Direct Share ទេ (បានទាញយកជា JPG ជំនួសវិញ)');
+    }
+  }, 'image/jpeg', 0.95);
 }
 
 // PWA Install Prompt handling

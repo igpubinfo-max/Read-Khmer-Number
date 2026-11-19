@@ -141,6 +141,18 @@
             <span>ផ្ញើ</span>
           </button>
         </div>
+
+        <!-- Quick Export Buttons Row on Result Card -->
+        <div class="quick-export-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+          <button id="quickDownloadJpgBtn" class="btn-action btn-accent" style="font-size: 12px; padding: 8px;" title="ទាញយកជារូបភាព JPG ដើម្បីផ្ញើទៅភ្ញៀវ">
+            <span>🖼️</span>
+            <span>ទាញយក JPG</span>
+          </button>
+          <button id="quickPrintBtn" class="btn-action btn-secondary" style="font-size: 12px; padding: 8px;" title="បោះពុម្ពវិក្កយបត្រ">
+            <span>🖨️</span>
+            <span>បោះពុម្ព (Print)</span>
+          </button>
+        </div>
       </section>
 
       <!-- Figures & Khmer Numerals Card -->
@@ -193,49 +205,101 @@
         </div>
       </div>
 
-      <!-- Cheque / Payment Voucher Template Card -->
-      <section class="cheque-card">
+      <!-- Cheque / Official Payment Receipt Template Card -->
+      <section id="printableReceipt" class="cheque-card">
         <div class="cheque-header">
-          <div class="cheque-title">🧾 បង្កាន់ដៃទូទាត់ / PAYMENT VOUCHER</div>
-          <div>
-            <input type="date" id="chequeDate" class="cheque-input" style="width: 125px; font-weight: 600;">
+          <div class="receipt-brand-box">
+            <div class="cheque-title">🧾 បង្កាន់ដៃទូទាត់ប្រាក់ / PAYMENT RECEIPT</div>
+            <div class="receipt-sub-badge">ឯកសារផ្លូវការ / Official Voucher</div>
+          </div>
+          <div class="receipt-meta-box">
+            <div class="receipt-meta-item">
+              <span class="meta-label">លេខវិក្កយបត្រ (No):</span>
+              <input type="text" id="chequeReceiptNo" class="cheque-input meta-input" value="REC-001">
+            </div>
+            <div class="receipt-meta-item">
+              <span class="meta-label">កាលបរិច្ឆេទ (Date):</span>
+              <input type="date" id="chequeDate" class="cheque-input meta-input">
+            </div>
           </div>
         </div>
 
         <div class="cheque-field-row">
-          <span class="cheque-field-label">បង់ជូនឈ្មោះ (Pay to):</span>
-          <input type="text" id="chequePayee" class="cheque-input" placeholder="ឈ្មោះអ្នកទទួលប្រាក់...">
+          <span class="cheque-field-label">បង់ជូនឈ្មោះ (Client / Payee):</span>
+          <input type="text" id="chequePayee" class="cheque-input" placeholder="ឈ្មោះអតិថិជន / ក្រុមហ៊ុន...">
         </div>
 
         <div class="cheque-field-row">
-          <span class="cheque-field-label">ចំនួនជាលេខ (Amount):</span>
-          <div id="chequeFigures" class="cheque-box-amount">---</div>
+          <span class="cheque-field-label">ទូទាត់តាម (Payment Method):</span>
+          <select id="chequePaymentMethod" class="cheque-select">
+            <option value="សាច់ប្រាក់ (Cash)">💵 សាច់ប្រាក់ (Cash)</option>
+            <option value="ABA KHQR">📱 ABA KHQR</option>
+            <option value="Wing Bank">🦅 Wing Bank</option>
+            <option value="ធនាគារ (Bank Transfer)">🏦 ធនាគារ (Bank Transfer)</option>
+            <option value="មូលប្បទានប័ត្រ (Cheque)">🧾 មូលប្បទានប័ត្រ (Cheque)</option>
+          </select>
         </div>
 
-        <div style="margin-bottom: 8px;">
-          <span class="cheque-field-label">ចំនួនទឹកប្រាក់ជាអក្សរ (In Words):</span>
+        <div class="cheque-field-row amount-highlight-row">
+          <span class="cheque-field-label">ចំនួនជាលេខ (Amount in Figures):</span>
+          <div id="chequeFigures" class="cheque-box-amount">---</div>
+          <div id="chequeKmDigits" class="cheque-box-kmdigits">---</div>
+        </div>
+
+        <div class="words-receipt-container">
+          <span class="cheque-field-label">ចំនួនទឹកប្រាក់ជាអក្សរខ្មែរ (In Khmer Words):</span>
           <div id="chequeWords" class="cheque-words-display">---</div>
         </div>
 
-        <div class="cheque-field-row">
-          <span class="cheque-field-label">សម្រាប់ (For / Memo):</span>
+        <div class="cheque-field-row" style="margin-top: 8px;">
+          <span class="cheque-field-label">សម្រាប់ (Description / For):</span>
           <input type="text" id="chequeMemo" class="cheque-input" placeholder="ថ្លៃទំនិញ / សេវាកម្ម / វិក្កយបត្រ...">
         </div>
 
         <div class="cheque-footer">
-          <div style="font-size: 11px; opacity: 0.7;">* បង្កាន់ដៃត្រឹមត្រូវតាមច្បាប់</div>
-          <div class="cheque-sig-line">ហត្ថលេខាអ្នកអនុញ្ញាត</div>
+          <div class="receipt-notes">
+            <span>* បង្កាន់ដៃត្រឹមត្រូវតាមច្បាប់</span><br>
+            <span style="font-size: 10px; opacity: 0.6;">សូមរក្សាទុកជាភស្តុតាងនៃការទូទាត់</span>
+          </div>
+
+          <!-- Official Stamp Graphic -->
+          <div class="paid-stamp-badge">
+            <div class="stamp-inner">
+              <span class="stamp-star">★ ★ ★</span>
+              <span class="stamp-text-km">បានទូទាត់</span>
+              <span class="stamp-text-en">PAID</span>
+            </div>
+          </div>
+
+          <div class="cheque-sig-line">
+            <span>ហត្ថលេខា និងត្រា</span>
+            <span style="font-size: 9px; display: block; opacity: 0.7;">Authorized Signature</span>
+          </div>
         </div>
 
-        <div class="cheque-btns">
-          <button id="copyChequeBtn" class="btn-small" style="font-family: var(--font-khmer); font-size: 12px; flex: 1; padding: 8px;">
-            📋 ចម្លងព័ត៌មានបង្កាន់ដៃ
+        <!-- Action Buttons for Receipt -->
+        <div class="receipt-action-grid">
+          <button id="downloadJpgBtn" class="btn-action btn-gold" title="ទាញយកជារូបភាព JPG ផ្ញើជូនភ្ញៀវ">
+            <span>🖼️</span>
+            <span>ទាញយក JPG ផ្ញើភ្ញៀវ</span>
           </button>
-          <button id="printChequeBtn" class="btn-small" style="font-family: var(--font-khmer); font-size: 12px; flex: 1; padding: 8px;">
-            🖨️ បោះពុម្ព (Print)
+          <button id="shareJpgBtn" class="btn-action btn-telegram" title="ផ្ញើរូបភាពទៅកាន់ Telegram / Messenger">
+            <span>📤</span>
+            <span>ផ្ញើរូបទៅ Telegram</span>
+          </button>
+          <button id="printChequeBtn" class="btn-action btn-print" title="បោះពុម្ពបង្កាន់ដៃ">
+            <span>🖨️</span>
+            <span>បោះពុម្ព (Print)</span>
+          </button>
+          <button id="copyChequeBtn" class="btn-action btn-secondary" title="ចម្លងព័ត៌មានបង្កាន់ដៃ">
+            <span>📋</span>
+            <span>ចម្លងអត្ថបទ</span>
           </button>
         </div>
       </section>
+
+      <!-- Hidden Offscreen Canvas for Generating Crisp JPG Images -->
+      <canvas id="receiptCanvas" style="display: none;"></canvas>
 
       <!-- History Section -->
       <section class="card history-section">
